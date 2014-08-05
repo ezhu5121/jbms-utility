@@ -1,0 +1,3 @@
+@PACKAGE_INIT@
+
+set_and_check(jbms-utility_INCLUDE_DIRS "@PACKAGE_jbms-utility_INCLUDE_DIRS@")
