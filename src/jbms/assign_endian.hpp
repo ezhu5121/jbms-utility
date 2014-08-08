@@ -9,7 +9,6 @@ namespace jbms {
 template <class Data_, boost::endian::order order_>
 struct endian_wrapper {
   using Data = Data_;
-  using value_type = typename std::remove_const<typename std::remove_reference<Data_>::type>::type::value_type;
   using order_type = std::integral_constant<boost::endian::order,order_>;
   constexpr static boost::endian::order order = order_;
   Data &data;
@@ -17,7 +16,7 @@ struct endian_wrapper {
 
   template <class AssignTo,
             decltype(assign(std::declval<AssignTo &>(), std::declval<endian_wrapper>())) * = nullptr>
-  operator AssignTo() const {
+  explicit operator AssignTo() const {
     AssignTo result;
     assign(result, *this);
     return result;
