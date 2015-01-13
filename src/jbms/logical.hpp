@@ -12,7 +12,7 @@ template <bool ...> struct bool_seq;
 template <typename... xs>
 using and_ = std::is_same<
   bool_seq<xs::value...>,
-  bool_seq<(xs::value,true)...>
+  bool_seq<(xs::value?true:true)...>
   >;
 
 template <class x>
@@ -21,7 +21,7 @@ using not_ = std::integral_constant<bool,!x::value>;
 template <bool... xs>
 using and_c = std::is_same<
   bool_seq<xs...>,
-  bool_seq<(xs,true)...>
+  bool_seq<(xs?true:true)...>
   >;
 
 // or(xs::value...) = not(and(!xs::value...))
@@ -30,14 +30,14 @@ using or_ = std::integral_constant<
   bool,
   !std::is_same<
     bool_seq<(!xs::value)...>,
-    bool_seq<(xs::value,true)...>>::value>;
+    bool_seq<(xs::value?true:true)...>>::value>;
 
 template <bool... xs>
 using or_c = std::integral_constant<
   bool,
   !std::is_same<
     bool_seq<(!xs)...>,
-    bool_seq<(xs,true)...>>::value>;
+    bool_seq<(xs?true:true)...>>::value>;
 
 }
 
