@@ -2,6 +2,7 @@
 #define HEADER_GUARD_d633187a0f19b3bb7e8d950eb860c300
 
 #include "./print_fwd.hpp"
+#include "./string_view.hpp"
 #include <sstream>
 #include <string>
 #include <functional>
@@ -24,10 +25,11 @@
 
 namespace jbms {
 
-template <class T>
-std::string to_string(T const &a) {
+template <class... T>
+std::string to_string(T const &... a) {
   std::ostringstream ostr;
-  print(ostr, a);
+  auto l = { ((void)print(ostr, a),nullptr)... };
+  (void)l;
   return ostr.str();
 }
 
@@ -37,6 +39,99 @@ struct printer_specialization<std::reference_wrapper<T>> {
     printer_specialization<std::decay_t<T>>::print(os, x.get());
   }
 };
+
+/**
+ * Wrapper that prints a python-like repr string when streamed to an ostream.
+ **/
+template <class T>
+struct Repr {
+  T value;
+  Repr(T value) : value(value) {}
+
+  operator std::string () const {
+    return to_string(*this);
+  }
+
+  std::string str() const {
+    return to_string(*this);
+  }
+};
+
+template <class T>
+Repr<T const &> repr(T const &s) { return Repr<T const &>(s); }
+
+/**
+ * Note: We can't use Repr<string_view const &> because we need to make a temporary string_view
+ **/
+inline Repr<string_view> repr(std::string const &s) { return Repr<string_view>(s); }
+inline Repr<string_view> repr(string_view const &s) { return Repr<string_view>(s); }
+inline Repr<string_view> repr(const char *s) { return Repr<string_view>(s); }
+
+template <class T>
+std::ostream &operator<<(std::ostream &os, Repr<T> r) {
+  print(os, r.value);
+  return os;
+}
+
+inline std::ostream &operator<<(std::ostream &os, Repr<string_view> r) {
+  os << '\"';
+
+  for (auto x : r.value) {
+    switch (x) {
+    case '\0':
+      os << "\\0";
+      break;
+    case '\'':
+      os << "\\'";
+      break;
+    case '\\':
+      os << "\\\\";
+      break;
+    case '\a':
+      os << "\\a";
+      break;
+    case '\b':
+      os << "\\b";
+      break;
+    case '\f':
+      os << "\\f";
+      break;
+    case '\n':
+      os << "\\n";
+      break;
+    case '\r':
+      os << "\\r";
+      break;
+    case '\t':
+      os << "\\t";
+      break;
+    case '\v':
+      os << "\\v";
+      break;
+    case '"':
+      os << "\\\"";
+      break;
+    default:
+      if (std::isprint(x))
+        os << x;
+      else {
+        os << "\\x";
+        constexpr const char *letters = "0123456789abcdef";
+        os << letters[x / 16];
+        os << letters[x % 16];
+      }
+      break;
+    }
+  }
+
+  os << '\"';
+  return os;
+}
+
+template <class T>
+std::string repr_string(T const &x) {
+  return repr(x);
+}
 
 template <class T, class U>
 struct printer_specialization<std::pair<T,U>> {

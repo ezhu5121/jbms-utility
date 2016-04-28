@@ -10,6 +10,29 @@ namespace jbms {
 template <class T>
 class ptr_ref;
 
+template <class Ptr>
+struct pointer_element_type {};
+
+template <class U>
+struct pointer_element_type<U *> {
+  using type = U;
+};
+
+template <class U>
+struct pointer_element_type<ptr_ref<U>> {
+  using type = U;
+};
+
+template <class U>
+struct pointer_element_type<std::shared_ptr<U>> {
+  using type = U;
+};
+
+template <class U, class Deleter>
+struct pointer_element_type<std::unique_ptr<U,Deleter>> {
+  using type = U;
+};
+
 /**
  * A non-owning pointer implicitly constructible from a bare pointer or a shared_ptr.
  *
@@ -19,39 +42,29 @@ template <class T>
 class ptr_ref {
   T *ptr_;
 
+  // template <class Ptr, class U = typename pointer_element_type<Ptr>::type>
+  // struct is_compatible {
+  //   constexpr static bool value = std::is_same<U, T>::value || std::is_same<U const, T>::value;
+  // };
+
+  template <class Ptr, class U = typename pointer_element_type<Ptr>::type>
+  using is_compatible = std::is_convertible<U *, T *>;
+
 public:
+  using element_type = T;
+
   ptr_ref() : ptr_(nullptr) {}
   ptr_ref(ptr_ref const &) = default;
 
-  template <class U, JBMS_ENABLE_IF_C(std::is_same<U, T>::value || std::is_same<const U, T>::value)>
-  ptr_ref(std::shared_ptr<U> const &x)
-      : ptr_(x.get()) {}
-
-  template <class U, JBMS_ENABLE_IF_C(std::is_same<U, T>::value || std::is_same<const U, T>::value)>
-  ptr_ref(U *ptr)
-      : ptr_(ptr) {}
-
-  template <class U, JBMS_ENABLE_IF_C(std::is_same<U, T>::value || std::is_same<const U, T>::value)>
-  ptr_ref(ptr_ref<U> const &x)
-      : ptr_(x.get()) {}
+  template <class Ptr, JBMS_ENABLE_IF(is_compatible<Ptr>)>
+  ptr_ref(Ptr const &x)
+      : ptr_(std::addressof(*x)) {}
 
   ptr_ref &operator=(ptr_ref const &) = default;
 
-  template <class U, JBMS_ENABLE_IF_C(std::is_same<U, T>::value || std::is_same<const U, T>::value)>
-  ptr_ref &operator=(U *ptr) {
-    ptr_ = ptr;
-    return *this;
-  }
-
-  template <class U, JBMS_ENABLE_IF_C(std::is_same<U, T>::value || std::is_same<const U, T>::value)>
-  ptr_ref &operator=(std::shared_ptr<U> const &x) {
-    ptr_ = x.get();
-    return *this;
-  }
-
-  template <class U, JBMS_ENABLE_IF_C(std::is_same<U, T>::value || std::is_same<const U, T>::value)>
-  ptr_ref &operator=(ptr_ref<U> const &x) {
-    ptr_ = x.get();
+  template <class Ptr, JBMS_ENABLE_IF(is_compatible<Ptr>)>
+  ptr_ref &operator=(Ptr const &x) {
+    ptr_ = std::addressof(*x);
     return *this;
   }
 
@@ -61,6 +74,7 @@ public:
   T &operator*() const { return *ptr_; }
   T *operator->() const { return ptr_; }
 };
+
 }
 
 #endif /* HEADER GUARD */

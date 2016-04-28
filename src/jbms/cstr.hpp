@@ -14,6 +14,7 @@ namespace jbms {
 class cstr {
   const char *ptr_ = nullptr;
 public:
+  cstr() = default;
   cstr(const char *ptr) : ptr_(ptr) {}
   cstr(std::string const &str) : ptr_(str.c_str()) {}
   const char *data() const { return ptr_; }
