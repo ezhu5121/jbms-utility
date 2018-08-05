@@ -1,6 +1,7 @@
 #ifndef HEADER_GUARD_39d2ae75169d92bdeca7ebf7bceaeba2
 #define HEADER_GUARD_39d2ae75169d92bdeca7ebf7bceaeba2
 
+#include <vector>
 #include <type_traits>
 #include "jbms/enable_if.hpp"
 #include <stdexcept>
